@@ -1,25 +1,47 @@
 name: 自动同步 DeepSeek 镜像到阿里云
 on:
+  # 每天 UTC 时间 0 点（北京时间 8 点）自动运行
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *'  
+  # 允许手动触发
+  workflow_dispatch:     
 
 jobs:
-  sync-image:  # 修改这里，用英文或下划线/连字符
-    runs-on: ubuntu-latest
+  sync-image:
+    runs-on: ubuntu-latest  
     steps:
+      # 1. 检出仓库代码（若有需要，可省略）
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      # 2. 登录 Docker Hub（拉取官方镜像需要）
+      - name: 登录 Docker Hub
+        run: |
+          # 使用 GitHub Secrets 里的 Docker Hub 账号密码
+          echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login \
+            -u "${{ secrets.DOCKER_HUB_USERNAME }}" \
+            --password-stdin
+        # 说明：
+        # - 若 DeepSeek 镜像无需登录 Docker Hub 即可拉取，可省略此步骤
+        # - 若需要登录，需在 GitHub Secrets 中添加 DOCKER_HUB_USERNAME 和 DOCKER_HUB_PASSWORD
+
+      # 3. 从 Docker Hub 拉取 DeepSeek 官方镜像
       - name: 从 Docker Hub 拉取镜像
         run: docker pull deepseek-ai/deepseek:v1.0.0
 
+      # 4. 登录你的阿里云镜像仓库（推送镜像需要）
       - name: 登录阿里云 Registry
         run: |
           docker login \
-            --username=17741189510 \
+            --username=${{ secrets.ALIYUN_USERNAME }} \
             --password=${{ secrets.ALIYUN_PASSWORD }} \
             crrpi-96lzszx5lwifh8h.cn-qingdao.personal.cr.aliyuncs.com
 
+      # 5. 打标签并推送到阿里云仓库
       - name: 推送镜像到阿里云
         run: |
+          # 给镜像打标签（替换成你的阿里云仓库地址）
           docker tag deepseek-ai/deepseek:v1.0.0 \
             crrpi-96lzszx5lwifh8h.cn-qingdao.personal.cr.aliyuncs.com/deepseek1/deepseek:v1.0.0
+          # 推送镜像
           docker push crrpi-96lzszx5lwifh8h.cn-qingdao.personal.cr.aliyuncs.com/deepseek1/deepseek:v1.0.0
