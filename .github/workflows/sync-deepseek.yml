@@ -1,0 +1,28 @@
+name: 自动同步 DeepSeek 镜像到阿里云
+on:
+  schedule:
+    - cron: '0 0 * * *'  
+  workflow_dispatch:     
+
+jobs:
+  同步镜像:
+    runs-on: ubuntu-latest  
+    steps:
+      # 1. 拉取官方镜像
+      - name: 从 Docker Hub 拉取镜像
+        run: docker pull deepseek-ai/deepseek:v1.0.0
+
+      # 2. 登录你的阿里云仓库
+      - name: 登录阿里云 Registry
+        run: |
+          docker login \
+            --username=17741189510 \
+            --password=${{ secrets.ALIYUN_PASSWORD }} \  
+            crrpi-96lzszx5lwifh8h.cn-qingdao.personal.cr.aliyuncs.com
+
+      # 3. 打标签 + 推送（替换成完整仓库地址）
+      - name: 推送镜像到阿里云
+        run: |
+          docker tag deepseek-ai/deepseek:v1.0.0 \
+            crrpi-96lzszx5lwifh8h.cn-qingdao.personal.cr.aliyuncs.com/deepseek1/deepseek:v1.0.0
+          docker push crrpi-96lzszx5lwifh8h.cn-qingdao.personal.cr.aliyuncs.com/deepseek1/deepseek:v1.0.0
